@@ -1,0 +1,11 @@
+.DS_Store
+__pycache__/
+*.pyc
+*.zip
+*launch.log
+*web.log
+Talaria.app/Contents/Resources/app/reports/*
+!Talaria.app/Contents/Resources/app/reports/.gitkeep
+Talaria.app/Contents/Resources/app/inputs/intervals_workouts/*
+!Talaria.app/Contents/Resources/app/inputs/intervals_workouts/.gitkeep
+Talaria.app/Contents/Resources/app/.intervals_gui_config.json
