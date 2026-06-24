@@ -44,7 +44,7 @@ Use this filename format:
 YYYY-MM-DD_workout-name.txt
 ```
 
-Refer to [Intervals workout formatting](https://forum.intervals.icu/t/workout-builder-syntax-quick-guide/123701)
+Refer to [Intervals workout formatting](https://forum.intervals.icu/t/workout-builder-syntax-quick-guide/123701) for workout syntax.
 
 Talaria infers workout type from the filename, title, and workout text. It recognises common ride, run, swim, strength, walk, yoga/mobility, and rowing wording. Re-uploading is safe: planned workouts use stable external ids and upsert.
 
