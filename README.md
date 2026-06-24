@@ -1,22 +1,12 @@
+<p align="center">
+  <img src="Talaria.app/Contents/Resources/talaria-logo.png" width="88" alt="Talaria logo">
+</p>
+
 # Talaria
 
-Minimal local tools for Intervals.icu.
+Local Intervals.icu tools for workout uploads and AI-ready training summaries.
 
-Talaria uploads plain-text workouts and turns completed Intervals.icu activity data into an AI-coach-ready training summary. It runs locally on macOS, keeps API keys on your machine, and uses the Intervals.icu API directly.
-
-## What It Does
-
-- Upload planned workouts from local `.txt` files.
-- Read completed activities, HR/load signals, wellness, intervals, streams, weather, and curve context.
-- Generate copyable coach summaries.
-- Save long reports as local Markdown files.
-- Open a native app first, with an optional web UI button.
-
-## Requirements
-
-- macOS
-- Python 3 with Tkinter for the native app
-- Intervals.icu API key
+Talaria is a small macOS app. It stores your API key locally, uploads workout text files to Intervals.icu, and reads completed activity/recovery data so you can paste useful context into an AI coach.
 
 ## Start
 
@@ -24,16 +14,57 @@ Double-click `Talaria.app`.
 
 If macOS is awkward after moving the folder, double-click `Start Intervals Planner.command`.
 
-## Privacy
+`Talaria.app` opens the native local app. Use `Open Web App` in the top right only if you want the browser version.
 
-Talaria has no hosted backend. Your API key is stored locally in:
+## Setup
+
+1. Create or copy your Intervals.icu API key from Intervals.icu settings.
+2. Open Talaria.
+3. Paste the key in `Setup`.
+4. Leave athlete id as `0` for your own account.
+5. Click `Save`, then `Test key`.
+
+Your API key is stored locally:
 
 ```text
 ~/Library/Application Support/Talaria/intervals_config.json
 ```
 
-Saved reports live inside:
+## Upload Workouts
+
+Put workout `.txt` files here:
+
+```text
+Talaria.app/Contents/Resources/app/inputs/intervals_workouts
+```
+
+Use this filename format:
+
+```text
+YYYY-MM-DD_workout-name.txt
+```
+
+Talaria infers workout type from the filename, title, and workout text. It recognises common ride, run, swim, strength, walk, yoga/mobility, and rowing wording. Re-uploading is safe: planned workouts use stable external ids and upsert.
+
+## Progress Read
+
+The default date range is the last 7 days through today. Change the dates if needed, then click `Fetch summary`.
+
+Talaria reads completed activities, full activity detail for every activity in the range, intervals, HR/load data, streams, weather, best efforts, athlete curve context, and wellness fields when available.
+
+The summary appears as copyable text. If there are more than 25 completed activities, Talaria asks whether to also save a Markdown report.
+
+Saved reports live here:
 
 ```text
 Talaria.app/Contents/Resources/app/reports
 ```
+
+Use `View reports` to open that folder.
+
+## Notes
+
+- No hosted backend.
+- No npm or package install.
+- Keep the whole `Talaria` folder together when moving it.
+- Python 3 with Tkinter is needed for the native app.
