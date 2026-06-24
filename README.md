@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="Talaria.app/Contents/Resources/talaria-logo.png" width="96" alt="Talaria logo">
+  <img src="Talaria.app/Contents/Resources/talaria-logo.png" width="192" alt="Talaria logo">
 </p>
 
 # Talaria
