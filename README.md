@@ -1,4 +1,4 @@
-<p align="center">
+<img width="1254" height="1254" alt="talaria-logo" src="https://github.com/user-attachments/assets/ffd3f6ea-066c-47f6-b16e-3ca57a11363b" /><p align="center">
   <img src="Talaria.app/Contents/Resources/talaria-logo.png" width="88" alt="Talaria logo">
 </p>
 
