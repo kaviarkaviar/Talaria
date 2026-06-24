@@ -14,7 +14,7 @@ Talaria uploads plain-text workouts and turns completed Intervals.icu activity d
 - Parse one dated workout file, folders of files, or a single .md workout plan split by dated headings.
 - Filter/sort workouts by sport, preview the folder tree, and open the import folder from the upload tab.
 - Delete local workout files after upload if you no longer need them.
-- Read completed activities, HR/load signals, wellness, intervals, streams, weather, and curve context.
+- Read completed activities, HR/load signals, wellness, intervals, streams, weather, athlete settings, gear, routes, calendar context, and curve context.
 - Generate copyable coach summaries as reports.
 - Save long reports as local Markdown files.
 - Open a native app first, with an optional web UI button.
@@ -48,4 +48,10 @@ Saved reports live inside:
 
 ```text
 Talaria.app/Contents/Resources/app/reports
+```
+
+Example workouts live inside:
+
+```text
+Talaria.app/Contents/Resources/app/inputs/intervals_workouts/examples
 ```

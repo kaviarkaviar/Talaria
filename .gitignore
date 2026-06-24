@@ -8,4 +8,7 @@ Talaria.app/Contents/Resources/app/reports/*
 !Talaria.app/Contents/Resources/app/reports/.gitkeep
 Talaria.app/Contents/Resources/app/inputs/intervals_workouts/*
 !Talaria.app/Contents/Resources/app/inputs/intervals_workouts/.gitkeep
+!Talaria.app/Contents/Resources/app/inputs/intervals_workouts/PUT_WORKOUTS_HERE.md
+!Talaria.app/Contents/Resources/app/inputs/intervals_workouts/examples/
+!Talaria.app/Contents/Resources/app/inputs/intervals_workouts/examples/**
 Talaria.app/Contents/Resources/app/.intervals_gui_config.json

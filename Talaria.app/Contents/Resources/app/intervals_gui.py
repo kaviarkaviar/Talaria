@@ -68,9 +68,9 @@ def infer_workout_type(filename_slug: str, name: str, description: str) -> str:
         ("WeightTraining", ("strength", "weights", "weight training", "gym", "lift", "lifting", "s&c", "conditioning")),
         ("Swim", ("swim", "pool", "open water", "css", "freestyle", "breaststroke", "backstroke")),
         ("Run", ("run", "jog", "brick run", "tempo run", "long run", "interval run")),
+        ("Yoga", ("yoga", "mobility", "stretch")),
         ("Ride", ("bike", "ride", "cycle", "cycling", "turbo", "trainer", "zwift", "brick bike")),
         ("Walk", ("walk", "hike", "hiking")),
-        ("Yoga", ("yoga", "mobility", "stretch")),
         ("Rowing", ("row", "rowing", "erg rower")),
     ]
     for workout_type, keywords in rules:
@@ -265,6 +265,29 @@ def fetch_athlete_curve_context(athlete_id: str, api_key: str, oldest: str, newe
         ("range_power_bests", f"/athlete/{athlete_id}/activity-power-curves.json", {"oldest": oldest, "newest": newest, "secs": "5,60,300,1200"}),
         ("range_pace_bests", f"/athlete/{athlete_id}/activity-pace-curves.json", {"oldest": oldest, "newest": newest, "distances": "1000,5000,10000"}),
         ("power_hr_curve", f"/athlete/{athlete_id}/power-hr-curve", {"start": oldest, "end": newest}),
+    )
+    for key, path, query in requests:
+        try:
+            context[key] = intervals_request("GET", path, api_key, query=query) or {}
+        except Exception as exc:
+            context[f"{key}_error"] = str(exc)
+    return context
+
+
+def fetch_athlete_context(athlete_id: str, api_key: str, oldest: str, newest: str) -> dict[str, Any]:
+    context: dict[str, Any] = {}
+    requests: tuple[tuple[str, str, dict[str, str] | None], ...] = (
+        ("athlete", f"/athlete/{athlete_id}", None),
+        ("profile", f"/athlete/{athlete_id}/profile", None),
+        ("training_plan", f"/athlete/{athlete_id}/training-plan", None),
+        ("weather_config", f"/athlete/{athlete_id}/weather-config", None),
+        ("weather_forecast", f"/athlete/{athlete_id}/weather-forecast", None),
+        ("gear", f"/athlete/{athlete_id}/gear", None),
+        ("routes", f"/athlete/{athlete_id}/routes", None),
+        ("custom_items", f"/athlete/{athlete_id}/custom-item", None),
+        ("activity_tags", f"/athlete/{athlete_id}/activity-tags", None),
+        ("event_tags", f"/athlete/{athlete_id}/event-tags", None),
+        ("calendar_events", f"/athlete/{athlete_id}/events", {"oldest": oldest, "newest": newest}),
     )
     for key, path, query in requests:
         try:
@@ -723,6 +746,135 @@ def summarize_additional_fields(data: dict[str, Any], known_keys: set[str]) -> s
     return "; ".join(extras) if extras else None
 
 
+def object_list(payload: Any) -> list[dict[str, Any]]:
+    if isinstance(payload, list):
+        return [item for item in payload if isinstance(item, dict)]
+    if isinstance(payload, dict):
+        for key in ("items", "data", "gear", "routes", "events", "custom_items"):
+            value = payload.get(key)
+            if isinstance(value, list):
+                return [item for item in value if isinstance(item, dict)]
+    return []
+
+
+def summarize_athlete_context(athlete_context: dict[str, Any]) -> list[str]:
+    lines: list[str] = []
+    athlete = athlete_context.get("athlete") if isinstance(athlete_context.get("athlete"), dict) else {}
+    profile = athlete_context.get("profile") if isinstance(athlete_context.get("profile"), dict) else {}
+    training_plan = athlete_context.get("training_plan") if isinstance(athlete_context.get("training_plan"), dict) else {}
+    if athlete or profile or training_plan:
+        bits = []
+        combined = {**athlete, **profile}
+        for item in [
+            fmt_optional(combined, ("sex", "gender"), "sex", 0),
+            fmt_optional(combined, ("age",), "age", 0),
+            fmt_optional(combined, ("weight",), "weight", 1, "kg"),
+            fmt_optional(combined, ("ftp", "icu_ftp"), "FTP", 0, "w"),
+            fmt_optional(combined, ("lthr",), "LTHR", 0, "bpm"),
+            fmt_optional(combined, ("max_hr", "maxHr", "athlete_max_hr"), "max HR", 0, "bpm"),
+            fmt_optional(combined, ("resting_hr", "restingHR"), "resting HR", 0, "bpm"),
+            fmt_optional(combined, ("threshold_pace",), "threshold pace", 2, "m/s"),
+        ]:
+            if item:
+                bits.append(item)
+        plan_name = first_value(training_plan, ("name", "plan_name", "title"))
+        if plan_name:
+            bits.append(f"training plan {plan_name}")
+        sport_settings = athlete.get("sportSettings") if isinstance(athlete, dict) else None
+        if isinstance(sport_settings, list) and sport_settings:
+            sports = [str(first_value(item, ("sport", "type", "name")) or "") for item in sport_settings if isinstance(item, dict)]
+            useful = [sport for sport in sports if sport]
+            if useful:
+                bits.append("sport settings for " + ", ".join(useful[:8]))
+        if bits:
+            lines.append("Athlete settings/profile: " + "; ".join(bits[:14]))
+
+    gear = object_list(athlete_context.get("gear"))
+    if gear:
+        gear_bits = []
+        for item in gear[:10]:
+            name = first_value(item, ("name", "id", "nickname")) or "gear"
+            details = []
+            for detail in [
+                fmt_optional(item, ("distance", "total_distance"), "distance", 0, "m"),
+                fmt_optional(item, ("moving_time", "time"), "time", 0, "s"),
+                fmt_optional(item, ("reminderDistance", "reminder_distance"), "reminder", 0, "m"),
+            ]:
+                if detail:
+                    details.append(detail)
+            gear_bits.append(str(name) + (f" ({', '.join(details[:2])})" if details else ""))
+        lines.append("Gear context: " + "; ".join(gear_bits))
+
+    routes = object_list(athlete_context.get("routes"))
+    if routes:
+        route_bits = []
+        for route in sorted(routes, key=lambda item: safe_num(item.get("activity_count") or item.get("activities")), reverse=True)[:8]:
+            name = first_value(route, ("name", "id")) or "route"
+            details = []
+            for detail in [
+                fmt_optional(route, ("activity_count", "activities"), "activities", 0),
+                fmt_distance_meters(first_number(route, ("distance",))),
+                fmt_optional(route, ("elevation_gain", "total_elevation_gain"), "elevation", 0, "m"),
+            ]:
+                if detail:
+                    details.append(detail)
+            route_bits.append(str(name) + (f" ({', '.join(details[:2])})" if details else ""))
+        lines.append("Frequent route context: " + "; ".join(route_bits))
+
+    calendar_events = object_list(athlete_context.get("calendar_events"))
+    if calendar_events:
+        event_counts: dict[str, int] = {}
+        event_samples = []
+        for event in calendar_events:
+            category = str(event.get("category") or event.get("type") or "event")
+            event_counts[category] = event_counts.get(category, 0) + 1
+            if len(event_samples) < 8:
+                when = str(event.get("start_date_local") or event.get("date") or "")[:10]
+                name = event.get("name") or event.get("description") or category
+                event_samples.append(f"{when} {category}: {name}")
+        counts = ", ".join(f"{key} {value}" for key, value in sorted(event_counts.items()))
+        lines.append("Calendar context in selected range: " + counts)
+        if event_samples:
+            lines.append("Calendar examples: " + "; ".join(event_samples))
+
+    tags = []
+    for key, label in (("activity_tags", "activity tags"), ("event_tags", "event tags")):
+        payload = athlete_context.get(key)
+        values = payload if isinstance(payload, list) else []
+        values = [str(value) for value in values if value]
+        if values:
+            tags.append(f"{label}: " + ", ".join(values[:16]))
+    lines.extend(tags)
+
+    custom_items = object_list(athlete_context.get("custom_items"))
+    if custom_items:
+        names = [str(first_value(item, ("name", "title", "id")) or "custom item") for item in custom_items[:12]]
+        lines.append("Custom fields/charts available: " + ", ".join(names))
+
+    weather_config = athlete_context.get("weather_config") if isinstance(athlete_context.get("weather_config"), dict) else {}
+    weather_forecast = athlete_context.get("weather_forecast")
+    if weather_config:
+        bits = []
+        for item in [
+            fmt_optional(weather_config, ("enabled",), "weather enabled", 0),
+            fmt_optional(weather_config, ("provider",), "provider", 0),
+            fmt_optional(weather_config, ("lat", "latitude"), "lat", 3),
+            fmt_optional(weather_config, ("lng", "lon", "longitude"), "lon", 3),
+        ]:
+            if item:
+                bits.append(item)
+        if bits:
+            lines.append("Weather config: " + "; ".join(bits))
+    if weather_forecast:
+        forecast_count = len(weather_forecast) if isinstance(weather_forecast, list) else len(weather_forecast) if isinstance(weather_forecast, dict) else 1
+        lines.append(f"Weather forecast records available: {forecast_count}")
+
+    unavailable = [key[:-6] for key in sorted(athlete_context) if key.endswith("_error")]
+    if unavailable:
+        lines.append("Optional context unavailable from API/permissions: " + ", ".join(unavailable[:12]))
+    return lines
+
+
 def save_markdown_report(summary: str, oldest: str, newest: str) -> Path:
     report_dir = REPORT_DIR
     report_dir.mkdir(parents=True, exist_ok=True)
@@ -752,10 +904,12 @@ def build_progress_summary(
     activity_enrichment: dict[str, dict[str, Any]] | None = None,
     fitness_events: list[dict[str, Any]] | None = None,
     curve_context: dict[str, Any] | None = None,
+    athlete_context: dict[str, Any] | None = None,
 ) -> str:
     activity_enrichment = activity_enrichment or {}
     fitness_events = fitness_events or []
     curve_context = curve_context or {}
+    athlete_context = athlete_context or {}
     completed_by_type: dict[str, dict[str, float]] = {}
     for activity in activities:
         sport = activity.get("type") or "Other"
@@ -801,6 +955,12 @@ def build_progress_summary(
             lines.append(f"- {sport}: " + ", ".join(details))
     else:
         lines.append("- No completed activities found in this date range.")
+
+    context_summaries = summarize_athlete_context(athlete_context)
+    if context_summaries:
+        lines.extend(["", "Athlete and calendar context:"])
+        for summary in context_summaries:
+            lines.append(f"- {summary}")
 
     curve_summaries = summarize_curve_context(curve_context)
     if curve_summaries:
@@ -1512,6 +1672,7 @@ class Handler(BaseHTTPRequestHandler):
                 activity_enrichment = fetch_activity_enrichment(activities, api_key)
                 fitness_events = fetch_fitness_model_events(athlete_id, api_key)
                 curve_context = fetch_athlete_curve_context(athlete_id, api_key, oldest, newest)
+                athlete_context = fetch_athlete_context(athlete_id, api_key, oldest, newest)
                 summary = build_progress_summary(
                     activities,
                     events,
@@ -1521,10 +1682,12 @@ class Handler(BaseHTTPRequestHandler):
                     activity_enrichment=activity_enrichment,
                     fitness_events=fitness_events,
                     curve_context=curve_context,
+                    athlete_context=athlete_context,
                 )
                 message = (
                     f"Fetched {len(activities)} activities, "
-                    f"{len(wellness)} wellness records, {len(fitness_events)} fitness/load events."
+                    f"{len(wellness)} wellness records, {len(fitness_events)} fitness/load events, "
+                    f"{sum(1 for value in athlete_context.values() if value)} context groups."
                 )
                 self.send_json(
                     {

@@ -1,0 +1,5 @@
+# Easy Bike Endurance
+
+- Warmup 10m ramp 50%-65% 85rpm
+- Endurance 35m Z2 85-95rpm
+- Cooldown 5m 50%

@@ -16,8 +16,8 @@ class IntervalsDesktopApp(tk.Tk):
     def __init__(self) -> None:
         super().__init__()
         self.title("Talaria")
-        self.geometry("1060x720")
-        self.minsize(960, 620)
+        self.geometry("1140x780")
+        self.minsize(1040, 700)
 
         self.config_data = intervals_gui.load_config()
         self.workouts = intervals_gui.workout_files()
@@ -489,6 +489,7 @@ class IntervalsDesktopApp(tk.Tk):
                 activity_enrichment = intervals_gui.fetch_activity_enrichment(activities, api_key)
                 fitness_events = intervals_gui.fetch_fitness_model_events(athlete_id, api_key)
                 curve_context = intervals_gui.fetch_athlete_curve_context(athlete_id, api_key, oldest, newest)
+                athlete_context = intervals_gui.fetch_athlete_context(athlete_id, api_key, oldest, newest)
                 summary = intervals_gui.build_progress_summary(
                     activities,
                     events,
@@ -498,6 +499,7 @@ class IntervalsDesktopApp(tk.Tk):
                     activity_enrichment=activity_enrichment,
                     fitness_events=fitness_events,
                     curve_context=curve_context,
+                    athlete_context=athlete_context,
                 )
                 result = {
                     "summary": summary,
@@ -506,6 +508,7 @@ class IntervalsDesktopApp(tk.Tk):
                     "activity_count": len(activities),
                     "wellness_count": len(wellness),
                     "fitness_count": len(fitness_events),
+                    "context_count": sum(1 for value in athlete_context.values() if value),
                 }
                 self.after(0, lambda: self.handle_progress_result(result))
             except Exception as exc:
@@ -519,7 +522,8 @@ class IntervalsDesktopApp(tk.Tk):
         activity_count = int(result["activity_count"])
         message = (
             f"Fetched {activity_count} activities, "
-            f"{result['wellness_count']} wellness records, {result['fitness_count']} fitness/load events."
+            f"{result['wellness_count']} wellness records, {result['fitness_count']} fitness/load events, "
+            f"{result['context_count']} context groups."
         )
         if activity_count > 25:
             should_save = messagebox.askyesno(
