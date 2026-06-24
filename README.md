@@ -10,7 +10,7 @@ Talaria uploads plain-text workouts and turns completed Intervals.icu activity d
 
 ## What It Does
 
-- Upload planned workouts from local `.txt` or `.md` files.
+- Upload planned workouts from local `.txt` or `.md` files, using [Intervals.icu workout syntax](https://forum.intervals.icu/t/workout-builder-syntax-quick-guide/123701)
 - Parse one dated file, folders of files, or a single Markdown plan split by dated headings.
 - Filter/sort workouts by sport, preview the folder tree, and open the import folder from the upload tab.
 - Delete local workout files after upload if you no longer need them.
