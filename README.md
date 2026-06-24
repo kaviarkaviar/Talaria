@@ -29,7 +29,12 @@ Talaria uploads plain-text workouts and turns completed Intervals.icu activity d
 
 Double-click `Talaria.app`.
 
-If macOS is awkward after moving the folder, double-click `Start Intervals Planner.command`.
+If macOS is awkward after moving the folder, the fallback launchers still live inside the app package:
+
+```text
+Talaria.app/Contents/Resources/app/launch_talaria_native.command
+Talaria.app/Contents/Resources/app/launch_talaria_browser.command
+```
 
 ## Privacy
 
